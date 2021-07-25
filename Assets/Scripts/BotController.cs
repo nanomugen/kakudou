@@ -1,0 +1,529 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using System.IO;
+using UnityEngine.SceneManagement;
+
+public class BotController : MonoBehaviour{
+    [SerializeField]
+    private float Speed=5F;
+    [SerializeField]
+    private float JumpForce=7F;
+    [SerializeField]
+    private float CameraHeight=1f;
+    [SerializeField]
+    private float CameraDistance=3.5f;
+    [SerializeField]
+    private float CameraMoveMin=0.15f;
+    [SerializeField]
+    private float Sensibility=10f;
+    [SerializeField]
+    private float SensibilityFPS=2f;
+    [SerializeField]
+    private GameObject misteryPrefab;
+
+
+    private Rigidbody rigidbody;
+    private bool ground;
+    private bool isJumping;
+    private Animator animator;
+
+    private bool MenuOpened;
+    private bool MessageSpawn;
+    private float MessageCount;
+    private float MessageTimeout=15f;
+    private string Message;
+    private GUIStyle guiStyle;
+
+    private Texture2D lastPic;
+
+    private float AngleX=0f;
+    private float AngleY=0f;
+    private float XLimit;//limit to 1P mouse x move(to see the y quartenion at camera localRotation)
+    private Vector3 CameraPosition3P;
+    private Vector3 CameraPosition1P;
+    private Vector3 Center1P;
+    private float Zoom;
+    private bool FirstPerson;
+    private bool onMovingPlat;
+
+    private bool RockInteractPermit;
+    public static bool RockInteract;
+    private int InteractNumber;
+    private bool observer;
+
+    //eiffel
+    private GameObject eiffel_p1;
+    private int p1x,p1y,p1z;
+    private GameObject eiffel_p2;
+    private int p2x,p2y,p2z;
+    private GameObject eiffel_p3;
+    private int p3x,p3y,p3z;
+    private bool p1,p2,p3;
+
+    private GameObject goal;
+
+
+    //sound
+    private AudioClip walkSound;
+    private AudioClip jumpSound;
+    private AudioClip landSound;
+    private AudioClip misterySound;
+    private AudioClip photoSound;
+    private AudioSource audioScr;
+
+    //particle effect
+    [SerializeField]
+    private GameObject dust;
+    //MENU (WHEN PRESS ESC)
+    void OnGUI(){
+        
+        if(MenuOpened){
+            GUILayout.BeginArea(new Rect(10, 10, 200, 300));
+                GUILayout.Label("CameraHeight: "+CameraHeight);
+                //CameraHeight = GUILayout.HorizontalSlider(CameraHeight,2f,10f);
+                GUILayout.Label("CameraDistance: "+CameraDistance);
+                //CameraDistance = GUILayout.HorizontalSlider(CameraDistance,2f,10f);
+                GUILayout.Label("Mouse Sensibility: "+Sensibility);
+                Sensibility = GUILayout.HorizontalSlider(Sensibility,5f,50f);
+                GUILayout.Label("Mouse Sensibility FPS: "+SensibilityFPS);
+                SensibilityFPS = GUILayout.HorizontalSlider(SensibilityFPS,0.5f,8f);
+                GUILayout.Label("Speed: "+Speed);
+                Speed = GUILayout.HorizontalSlider(Speed,2f,10f);
+                GUILayout.Label("Jump: "+JumpForce);
+                JumpForce = GUILayout.HorizontalSlider(JumpForce,2f,10f);
+                GUILayout.Label("Message Timeout: "+ MessageTimeout);
+                MessageTimeout = GUILayout.HorizontalSlider(MessageTimeout,1f,30f);
+            GUILayout.EndArea();
+            
+            GUILayout.BeginArea(new Rect(10,Screen.height-30,50,20));
+                if(GUILayout.Button("Quit")){
+                    Application.Quit();
+                }
+            GUILayout.EndArea();
+        }
+        if(MenuOpened){//colocar uma variavel aqui pra mostrar quando tirar a foto tambem
+            GUILayout.BeginArea(new Rect(10,Screen.height-200,160,90));
+                if(lastPic!=null){
+                    GUILayout.Box(lastPic);
+                }
+            GUILayout.EndArea();
+        }
+
+        if(MessageSpawn){
+            if(MessageCount<=MessageTimeout){
+                //GUILayout.BeginArea(new Rect((Screen.width/2)-240,Screen.height-80,480,40));
+                GUI.backgroundColor = Color.black;
+                GUI.Box(new Rect((Screen.width/2)-240,Screen.height-80,480,40),Message,guiStyle);
+                //GUILayout.EndArea();
+                MessageCount+=Time.deltaTime;
+            }
+            else{
+                MessageSpawn=false;
+            }
+            
+        }
+
+        if(RockInteract && !MenuOpened){
+            if(Input.GetKeyDown(KeyCode.E)){
+                RockInteract=false;
+                Cursor.lockState = CursorLockMode.Locked;
+            }
+            if(InteractNumber==1 && !p1){
+                p1x = Mathf.RoundToInt(eiffel_p1.transform.position.x);
+                //p1y = Mathf.RoundToInt(eiffel_p1.transform.position.y);
+                p1z = Mathf.RoundToInt(eiffel_p1.transform.position.z);
+                GUILayout.BeginArea(new Rect((Screen.width/2)-250,10,500,400));
+                    GUILayout.Label("X Axis: "+(p1x+83));
+                    p1x = (int)GUILayout.HorizontalSlider(p1x,-250f,250f);
+                    GUILayout.Label("Z Axis: "+(p1z+9));
+                    p1z = (int)GUILayout.HorizontalSlider(p1z,-250f,250f);
+                    eiffel_p1.transform.position = new Vector3(p1x,eiffel_p1.transform.position.y,p1z);
+
+                GUILayout.EndArea();
+                if(eiffel_p1.transform.localPosition.x==0f && eiffel_p1.transform.localPosition.z==0f){
+                    //MAKE EFFECT AND SOUND
+                    solveMistery();
+                    p1=true;
+                }
+                //Debug.Log(eiffel_p1.transform.localPosition);
+            }
+            if(InteractNumber==2 && !p2){
+                p2x = Mathf.RoundToInt(eiffel_p2.transform.position.x);
+                p2z = Mathf.RoundToInt(eiffel_p2.transform.position.z);
+                GUILayout.BeginArea(new Rect((Screen.width/2)-250,10,500,400));
+                    GUILayout.Label("X Axis: "+(p2x+83));
+                    p2x = (int)GUILayout.HorizontalSlider(p2x,-250f,250f);
+                    GUILayout.Label("Z Axis: "+(p2z+9));
+                    p2z = (int)GUILayout.HorizontalSlider(p2z,-250f,250f);
+                    eiffel_p2.transform.position = new Vector3(p2x,eiffel_p2.transform.position.y,p2z);
+
+                GUILayout.EndArea();
+                Debug.Log(eiffel_p2.transform.localPosition);
+                if(eiffel_p2.transform.localPosition.x==0f && eiffel_p2.transform.localPosition.z==0f){
+                    //MAKE EFFECT AND SOUND
+                    solveMistery();
+                    p2=true;
+                }
+            }
+            if(InteractNumber==3 && !p3){
+                p3x = Mathf.RoundToInt(eiffel_p3.transform.position.x);
+                p3z = Mathf.RoundToInt(eiffel_p3.transform.position.z);
+                GUILayout.BeginArea(new Rect((Screen.width/2)-250,10,500,400));
+                    GUILayout.Label("X Axis: "+(p3x+83));
+                    p3x = (int)GUILayout.HorizontalSlider(p3x,-250f,250f);
+                    GUILayout.Label("Z Axis: "+(p3z+9));
+                    p3z = (int)GUILayout.HorizontalSlider(p3z,-250f,250f);
+                    eiffel_p3.transform.position = new Vector3(p3x,eiffel_p3.transform.position.y,p3z);
+
+                GUILayout.EndArea();
+                if(eiffel_p3.transform.localPosition.x==0f && eiffel_p3.transform.localPosition.z==0f){
+                    //MAKE EFFECT AND SOUND
+                    solveMistery();
+                    p3=true;
+                }
+                Debug.Log(eiffel_p3.transform.localPosition);
+            }
+        }
+        
+    }
+    void MessageStart(string msg){
+        Message = msg;
+        MessageCount=0f;
+        MessageSpawn=true;
+    }
+    
+    void Start(){
+        Vector3 cameraDir = new Vector3(1f,0f,-1f).normalized;
+        CameraHeight = 1f;
+        CameraPosition3P= transform.position+cameraDir*CameraDistance+new Vector3(0f,CameraHeight,0f);
+        Camera.main.transform.position = CameraPosition3P;
+        transform.LookAt(new Vector3(Camera.main.transform.position.x,transform.position.y,Camera.main.transform.position.z));
+        rigidbody = gameObject.GetComponent<Rigidbody>();
+        animator = gameObject.GetComponent<Animator>();
+        goal = GameObject.Find("Goal");
+        eiffel_p1 = GameObject.Find("eiffel_p1");
+        eiffel_p2 = GameObject.Find("eiffel_p2");
+        eiffel_p3 = GameObject.Find("eiffel_p3");
+
+        Cursor.lockState = CursorLockMode.Locked;
+        audioScr = gameObject.GetComponent<AudioSource>();
+        walkSound = Resources.Load<AudioClip>("Sounds/botwalk");
+        landSound = Resources.Load<AudioClip>("Sounds/land");
+        jumpSound = Resources.Load<AudioClip>("Sounds/jump_custo");
+        misterySound = Resources.Load<AudioClip>("Sounds/fanfare");
+        photoSound = Resources.Load<AudioClip>("Sounds/pictobox");
+        guiStyle = new GUIStyle();
+        guiStyle.fontSize = 32;
+        guiStyle.normal.textColor = Color.white;
+        guiStyle.alignment = TextAnchor.MiddleCenter;
+        //lastPic = Resources.Load<Texture>("screenshot.png");
+        Directory.CreateDirectory("Pictures");
+        lastPic = new Texture2D(Screen.width,Screen.height,TextureFormat.ARGB32,false);
+        
+        //IMPLEMENT A SYSTEM THAT SAVE THE NAME OF LAST PICTURE************************
+
+        
+
+    }
+
+    // Update is called once per frame
+    void Update(){
+        Move();
+        Jump();
+        Menu();
+        CameraMove();
+        Freeze();
+        Snap();
+        RockMove();
+        //Debug.Log("B-POS: "+transform.position+"C-POS: "+Camera.main.transform.position+"C-FOR: "+Camera.main.transform.forward);
+        
+    }
+    void LateUpdate() {
+        
+    }
+
+    //fazer salvar multiplas screenshots com (1) (2) etc ou com o tempo(data+segundos do dia)
+    void Snap(){
+        if(FirstPerson && Input.GetButtonDown("LeftClick") && !MenuOpened){
+            Debug.Log("take snap "+ System.DateTime.Now.ToString("yyyyMMddHHmmssffff"));
+            lastPic=ScreenCapture.CaptureScreenshotAsTexture(1);
+            File.WriteAllBytes("Pictures"+Path.DirectorySeparatorChar+"screenshot"+System.DateTime.Now.ToString("yyyyMMddHHmmssffff")+".png",lastPic.EncodeToPNG());
+            MessageStart("You Took a Picture!");
+            if(audioScr.isPlaying){
+                audioScr.Stop();
+            }
+            audioScr.clip = photoSound;
+            audioScr.Play();
+            Ray photoRay = Camera.main.ScreenPointToRay(new Vector3(Screen.width/2,Screen.height/2,0f));
+            if(Physics.Raycast(photoRay,out RaycastHit hit, Mathf.Infinity)){
+                if(hit.transform.name == "Goal"||hit.transform.name =="eiffel_p1"||hit.transform.name =="eiffel_p2"||hit.transform.name =="eiffel_p3"){
+                    if(observer && p1 && p2 && p3){
+                        Debug.Log("you win");
+                        SceneManager.LoadScene("WinScene");
+
+                    }
+                    else{
+                        Debug.Log("1 "+observer+p1+p2+p3);
+                    }
+                }
+                else{
+                    Debug.Log("2");
+                }
+                    
+            }
+            else{
+                Debug.Log("3");
+            }
+            
+        }
+    }
+
+    void OnPostRender() {
+        
+    }
+    
+
+    void CameraMove(){
+        if(!MenuOpened && !RockInteract && !isJumping && !onMovingPlat){
+            if((Input.GetAxisRaw("LT")>=0.8f||Input.GetKey(KeyCode.Tab)) && !FirstPerson){
+                FirstPerson=true;
+                CameraPosition1P = transform.position+new Vector3(0f,1.5f,0f)+0.75f*transform.forward;
+                Center1P = CameraPosition1P;
+                Zoom=0f;
+                rigidbody.velocity=Vector3.zero;
+                Camera.main.transform.position = CameraPosition1P;
+                Camera.main.transform.forward=transform.forward;
+                //Debug.Log("Camera position: "+ Camera.main.transform.position+" Camera.localRotation: "+Camera.main.transform.localRotation.eulerAngles);
+                XLimit = Camera.main.transform.localRotation.eulerAngles.y;
+                AngleY=XLimit;
+                AngleX=0f;
+                animator.SetBool("WALK",false);
+                animator.SetBool("JUMP",false);
+                if(audioScr.isPlaying){// && audioScr.clip==walkSound){
+                    audioScr.Stop();
+                    audioScr.loop=false;
+                }
+            }
+            else{
+                if((Input.GetAxisRaw("LT")<=0.3f && !Input.GetKey(KeyCode.Tab)) && FirstPerson){
+                    FirstPerson=false;
+                    Camera.main.transform.position = CameraPosition3P; 
+                }
+            }
+            if(FirstPerson){
+                float sideMovement = Input.GetAxis("Horizontal");
+                float scroll = Input.GetAxis("Mouse ScrollWheel");
+                Zoom = Mathf.Clamp(Zoom+scroll,0f,2f);
+                CameraPosition1P += 0.1f*(transform.right*sideMovement);
+                if(Vector3.Distance(CameraPosition1P,Center1P)>2f){//DEFINIR RAIO DE DISTANCIA MÁXIMA#####
+                    CameraPosition1P =Center1P + 2*((CameraPosition1P-Center1P).normalized);
+                }
+                Camera.main.transform.position = CameraPosition1P+Zoom*transform.forward;
+                AngleX += -Input.GetAxis("Mouse Y")*SensibilityFPS;
+                AngleY += Input.GetAxis("Mouse X")*SensibilityFPS;
+                AngleX = Mathf.Clamp(AngleX,-50f,50f);
+                AngleY = Mathf.Clamp(AngleY,XLimit-50f,XLimit+50f);
+                Camera.main.transform.localRotation = Quaternion.Euler(AngleX,AngleY,0f);
+                //Debug.Log("Camera position: "+ Camera.main.transform.position+" Camera.localRotation: "+Camera.main.transform.localRotation.eulerAngles);
+            }
+        }
+    }
+    void Move(){
+        if(!FirstPerson && !MenuOpened && !RockInteract){
+            float sideMovement = Input.GetAxisRaw("Horizontal");
+            float frontMovement = Input.GetAxisRaw("Vertical");
+            Vector3 movementVector = new Vector3(sideMovement,0f,frontMovement);
+            
+            //front -> vector that point to the front of player based on the camera
+            Vector3 front = (transform.position-new Vector3(Camera.main.transform.position.x,transform.position.y,Camera.main.transform.position.z)).normalized;
+            //side -> vector that point to the right(?) direction of the body, ortogonal to the front and up vector
+            Vector3 side = Vector3.Cross(Vector3.up,front).normalized;
+            Vector3 SideVelocity = side*sideMovement;//*Time.deltaTime;
+            Vector3 FrontVelocity = front*frontMovement;//*Time.deltaTime;
+            transform.LookAt(transform.position + (SideVelocity+FrontVelocity));
+            Vector3 velocity = Speed*((SideVelocity+FrontVelocity).normalized);
+            rigidbody.velocity = new Vector3(velocity.x,rigidbody.velocity.y,velocity.z);
+            if(movementVector.magnitude >0.3f){    
+                animator.SetBool("WALK",true);
+                if(!audioScr.isPlaying&&ground){
+                    audioScr.clip = walkSound;
+                    audioScr.loop=true;
+                    audioScr.Play();
+                }
+            }
+            else{
+                if(rigidbody.velocity.y >0 && ground && !isJumping){
+                    rigidbody.velocity = new Vector3(0f,0f,0f);
+                }
+                animator.SetBool("WALK",false);
+                if(audioScr.isPlaying && audioScr.clip==walkSound){
+                    audioScr.Stop();
+                    audioScr.loop=false;
+                }
+            }
+            float sideMouse = Input.GetAxisRaw("Mouse X");
+            float upMouse = Input.GetAxisRaw("Mouse Y");
+            //Debug.Log(Input.GetAxisRaw("Mouse ScrollWheel"));
+            float scroll = Input.GetAxisRaw("Mouse ScrollWheel");
+            if(sideMouse > CameraMoveMin || sideMouse < -CameraMoveMin){
+                Vector3 sideCamera = Vector3.Cross(transform.position - Camera.main.transform.position,Vector3.up).normalized;
+                CameraPosition3P += sideCamera*sideMouse*Sensibility*Time.deltaTime;//*(-1);
+                Camera.main.transform.position = CameraPosition3P;
+                
+            }
+            if((upMouse < -CameraMoveMin && CameraHeight <=5f) || (upMouse > CameraMoveMin && CameraHeight >=0.5f)){
+                CameraHeight= Mathf.Clamp(CameraHeight - upMouse*Time.deltaTime*Sensibility,0.5f,5f);
+            }
+            if((scroll>=0.1f && CameraDistance >=3f)||(scroll<=-0.1 && CameraDistance <=10f)){
+                CameraDistance-=scroll;
+            }
+            
+            front = (transform.position-new Vector3(Camera.main.transform.position.x,transform.position.y,Camera.main.transform.position.z)).normalized;
+            side = Vector3.Cross(Vector3.up,front).normalized;
+            CameraPosition3P = transform.position+CameraDistance*(-1)*front+new Vector3(0f,CameraHeight,0f);//NESSA FUNÇÃO ACOMPANHA SEMPRE CENTRALIZADO, QUANDO PULA A CAMERA MEXE
+            Camera.main.transform.position = CameraPosition3P;
+            //Camera.main.transform.position = new Vector3(transform.position.x,0f,transform.position.z)+CameraDistance*(-1)*front+new Vector3(0f,CameraHeight,0f);//NESSA FUNÇÃO A CAMERA ESTÁ SEMPRE NA MESMA ALTURA, O PULO FICA MELHOR, A CAMERA NAO MEXE AO PULAR
+            
+            Camera.main.transform.LookAt(transform.position);
+        }
+    }
+    void Jump(){
+        if(Input.GetButtonDown("B") && ground && !MenuOpened && !FirstPerson && !RockInteract){
+            isJumping=true;
+            rigidbody.velocity += Vector3.up*JumpForce;
+            if(audioScr.isPlaying){
+                audioScr.Stop();
+            }
+            audioScr.clip=jumpSound;
+            audioScr.loop=false;
+            audioScr.Play();
+            Instantiate(dust,transform.position+new Vector3(0f,0.1f,0f),Quaternion.identity);
+        }
+    }
+    void Menu(){
+
+        if(Input.GetKeyDown(KeyCode.Escape)){
+            if(MenuOpened){
+                if(!RockInteract){
+                    Cursor.lockState = CursorLockMode.Locked;
+                    
+                }
+                
+                MenuOpened = false;
+            }
+            else{
+                Cursor.lockState = CursorLockMode.None;
+                MenuOpened = true;
+                animator.SetBool("WALK",false);
+                animator.SetBool("JUMP",false);
+                if(audioScr.isPlaying){// && audioScr.clip==walkSound){
+                    audioScr.Stop();
+                    audioScr.loop=false;
+                }
+            }
+            //Debug.Log("MenuOpened: "+ MenuOpened + " Cursor.lockState: "+ Cursor.lockState);
+        }
+    }
+    void Freeze(){
+
+    }
+
+     void RockMove(){
+        if(RockInteract){
+            if((p1 && InteractNumber==1)||(p2 && InteractNumber==2)||(p3 && InteractNumber ==3)){
+                return;
+            }
+            Camera.main.transform.LookAt(goal.transform.position);
+            
+        }
+    }
+
+
+    private void OnCollisionEnter(Collision other) {
+        //6. floor
+        if(other.gameObject.layer == 6){
+            isJumping=false;//SÓ POR CAUSA DA RAMPA
+            ground =true;
+            animator.SetBool("JUMP",false);
+            if(audioScr.isPlaying){
+                audioScr.Stop();
+            }
+            audioScr.loop=false;
+            audioScr.clip = landSound;
+            audioScr.Play();
+            Instantiate(dust,transform.position+new Vector3(0f,0.1f,0f),Quaternion.identity);
+        }
+    }
+
+   
+
+    private void OnCollisionStay(Collision other) {
+        //6. floor
+        if(other.gameObject.layer == 6){
+            //Debug.Log("floor collision enter");
+            ground =true;
+            animator.SetBool("JUMP",false);
+            ContactPoint contact = other.contacts[0];
+            //Debug.Log("Player: "+ transform.position+ " Collision: "+contact.point);//fazer comparação com ambos para definir quando pusou de fato
+        }
+        if(other.gameObject.tag == "observer"){
+            observer=true;
+        }
+    }
+    private void OnCollisionExit(Collision other) {
+        //6. floor
+        if(other.gameObject.layer == 6){
+            this.transform.parent=null;
+            onMovingPlat=false;
+            ground =false;
+            animator.SetBool("JUMP",true);
+            if(audioScr.isPlaying && audioScr.clip==walkSound){
+                audioScr.Stop();
+                audioScr.loop=false;
+            }
+        }
+        if(other.gameObject.tag == "observer"){
+            observer=false;
+        }
+    }
+    private void OnTriggerStay(Collider other) {
+        if(other.tag == "ZouRock"){
+            if(Input.GetKeyDown(KeyCode.E) && !RockInteractPermit && !RockInteract && !MenuOpened){
+                Debug.Log("RockInteract true");
+                RockInteractPermit=true;
+            }
+            if(Input.GetKeyUp(KeyCode.E) && RockInteractPermit && !MenuOpened){//cuidado para nao sair do ontrigger stay com o "e apertado" pode travar
+                RockInteract=true;
+                RockInteractPermit=false;
+                InteractNumber = other.GetComponent<ZouRock>().getNumber();
+                
+                    Cursor.lockState = CursorLockMode.None;
+                
+                
+            }
+        }
+        if(other.tag == "MovingPlat"){
+            onMovingPlat=true;
+        }
+        
+    }
+    private void OnTriggerExit(Collider other) {
+        if(other.tag == "MovingPlat"){
+            onMovingPlat=false;
+        }
+        
+    }
+
+    private void solveMistery(){
+        GameObject fireworks = Instantiate<GameObject>(misteryPrefab,transform.position+Camera.main.transform.forward*2f,misteryPrefab.transform.rotation,this.transform);
+        //fireworks.transform.position = this.transform.forward;
+        if(audioScr.isPlaying){
+            audioScr.Stop();
+        }
+        audioScr.clip = misterySound;
+        audioScr.Play();
+        
+    }
+
+}
