@@ -11,8 +11,6 @@ public class PlatMove : MonoBehaviour
     [SerializeField]
     private bool zMove;
     [SerializeField]
-    private bool falsePlat;
-    [SerializeField]
     private float xMax;
     [SerializeField]
     private float xMin;
@@ -67,18 +65,19 @@ public class PlatMove : MonoBehaviour
             }
             this.transform.position+=new Vector3(0f,0f,Time.deltaTime*zUp*velocity);
         }
-        if(falsePlat){
+    }
+    private void OnTriggerEnter(Collider other) {
+        if(other.tag=="Player"){    
+            other.transform.parent = this.transform;
             
         }
     }
-    private void OnTriggerEnter(Collider other) {
-        if(other.tag=="Player"){
-            other.transform.parent = this.transform;
-        }
-    }
+
     private void OnTriggerExit(Collider other) {
         if(other.tag=="Player"){
             other.transform.parent = null;
         }
+        
     }
+
 }

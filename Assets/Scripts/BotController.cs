@@ -39,10 +39,11 @@ public class BotController : MonoBehaviour{
 
     private float AngleX=0f;
     private float AngleY=0f;
-    private float XLimit;//limit to 1P mouse x move(to see the y quartenion at camera localRotation)
+    private float XLimit;
     private Vector3 CameraPosition3P;
     private Vector3 CameraPosition1P;
     private Vector3 Center1P;
+    private Vector3 pauseVelocity;
     private float Zoom;
     private bool FirstPerson;
     private bool onMovingPlat;
@@ -75,7 +76,6 @@ public class BotController : MonoBehaviour{
     //particle effect
     [SerializeField]
     private GameObject dust;
-    //MENU (WHEN PRESS ESC)
     void OnGUI(){
         
         if(MenuOpened){
@@ -101,6 +101,7 @@ public class BotController : MonoBehaviour{
                     Application.Quit();
                 }
             GUILayout.EndArea();
+            //rigidbody.velocity = Vector3.zero;
         }
         if(MenuOpened){//colocar uma variavel aqui pra mostrar quando tirar a foto tambem
             GUILayout.BeginArea(new Rect(10,Screen.height-200,160,90));
@@ -192,7 +193,6 @@ public class BotController : MonoBehaviour{
         MessageCount=0f;
         MessageSpawn=true;
     }
-    
     void Start(){
         Vector3 cameraDir = new Vector3(1f,0f,-1f).normalized;
         CameraHeight = 1f;
@@ -226,8 +226,6 @@ public class BotController : MonoBehaviour{
         
 
     }
-
-    // Update is called once per frame
     void Update(){
         Move();
         Jump();
@@ -236,14 +234,8 @@ public class BotController : MonoBehaviour{
         Freeze();
         Snap();
         RockMove();
-        //Debug.Log("B-POS: "+transform.position+"C-POS: "+Camera.main.transform.position+"C-FOR: "+Camera.main.transform.forward);
         
     }
-    void LateUpdate() {
-        
-    }
-
-    //fazer salvar multiplas screenshots com (1) (2) etc ou com o tempo(data+segundos do dia)
     void Snap(){
         if(FirstPerson && Input.GetButtonDown("LeftClick") && !MenuOpened){
             Debug.Log("take snap "+ System.DateTime.Now.ToString("yyyyMMddHHmmssffff"));
@@ -278,11 +270,6 @@ public class BotController : MonoBehaviour{
             
         }
     }
-
-    void OnPostRender() {
-        
-    }
-    
 
     void CameraMove(){
         if(!MenuOpened && !RockInteract && !isJumping && !onMovingPlat){
@@ -409,7 +396,8 @@ public class BotController : MonoBehaviour{
                     Cursor.lockState = CursorLockMode.Locked;
                     
                 }
-                
+                rigidbody.velocity = pauseVelocity;
+                rigidbody.isKinematic = false;
                 MenuOpened = false;
             }
             else{
@@ -417,6 +405,9 @@ public class BotController : MonoBehaviour{
                 MenuOpened = true;
                 animator.SetBool("WALK",false);
                 animator.SetBool("JUMP",false);
+                pauseVelocity = rigidbody.velocity;
+                rigidbody.isKinematic = true;
+                rigidbody.velocity = Vector3.zero;
                 if(audioScr.isPlaying){// && audioScr.clip==walkSound){
                     audioScr.Stop();
                     audioScr.loop=false;
@@ -428,7 +419,16 @@ public class BotController : MonoBehaviour{
     void Freeze(){
 
     }
-
+    private void solveMistery(){
+        GameObject fireworks = Instantiate<GameObject>(misteryPrefab,transform.position+Camera.main.transform.forward*2f,misteryPrefab.transform.rotation,this.transform);
+        //fireworks.transform.position = this.transform.forward;
+        if(audioScr.isPlaying){
+            audioScr.Stop();
+        }
+        audioScr.clip = misterySound;
+        audioScr.Play();
+        
+    }
      void RockMove(){
         if(RockInteract){
             if((p1 && InteractNumber==1)||(p2 && InteractNumber==2)||(p3 && InteractNumber ==3)){
@@ -438,8 +438,6 @@ public class BotController : MonoBehaviour{
             
         }
     }
-
-
     private void OnCollisionEnter(Collision other) {
         //6. floor
         if(other.gameObject.layer == 6){
@@ -455,9 +453,6 @@ public class BotController : MonoBehaviour{
             Instantiate(dust,transform.position+new Vector3(0f,0.1f,0f),Quaternion.identity);
         }
     }
-
-   
-
     private void OnCollisionStay(Collision other) {
         //6. floor
         if(other.gameObject.layer == 6){
@@ -494,11 +489,16 @@ public class BotController : MonoBehaviour{
                 RockInteractPermit=true;
             }
             if(Input.GetKeyUp(KeyCode.E) && RockInteractPermit && !MenuOpened){//cuidado para nao sair do ontrigger stay com o "e apertado" pode travar
-                RockInteract=true;
-                RockInteractPermit=false;
                 InteractNumber = other.GetComponent<ZouRock>().getNumber();
+                RockInteractPermit=false;
+                if((p1 && InteractNumber==1)||(p2 && InteractNumber==2)||(p3 && InteractNumber ==3)){
                 
+                }
+                else{
+                    RockInteract=true;
                     Cursor.lockState = CursorLockMode.None;
+                }
+                
                 
                 
             }
@@ -515,15 +515,5 @@ public class BotController : MonoBehaviour{
         
     }
 
-    private void solveMistery(){
-        GameObject fireworks = Instantiate<GameObject>(misteryPrefab,transform.position+Camera.main.transform.forward*2f,misteryPrefab.transform.rotation,this.transform);
-        //fireworks.transform.position = this.transform.forward;
-        if(audioScr.isPlaying){
-            audioScr.Stop();
-        }
-        audioScr.clip = misterySound;
-        audioScr.Play();
-        
-    }
 
 }

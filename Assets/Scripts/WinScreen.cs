@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class WinScreen : MonoBehaviour
-{
+public class WinScreen : MonoBehaviour{
     // Start is called before the first frame update
     void Start()
     {
@@ -13,8 +12,7 @@ public class WinScreen : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
-    {
+    void Update(){
         
     }
     public void reset(){
