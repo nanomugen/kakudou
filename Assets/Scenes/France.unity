@@ -417,7 +417,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   number: 2
-  testFloat: 5
   offsetButton: {x: 50, y: 100, z: 0}
 --- !u!64 &27639285
 MeshCollider:
@@ -4302,6 +4301,10 @@ PrefabInstance:
     - target: {fileID: 6315199597434352873, guid: 25c3f74ee46b9224689b082db6898151, type: 3}
       propertyPath: m_Name
       value: Shoot (5)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6315199597434352873, guid: 25c3f74ee46b9224689b082db6898151, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6315199597434352878, guid: 25c3f74ee46b9224689b082db6898151, type: 3}
       propertyPath: m_RootOrder
@@ -11756,7 +11759,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   number: 3
-  testFloat: 5
   offsetButton: {x: 50, y: 100, z: 0}
 --- !u!64 &793722701
 MeshCollider:
@@ -14222,7 +14224,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   number: 1
-  testFloat: 5
   offsetButton: {x: 50, y: 100, z: 0}
 --- !u!4 &971174047 stripped
 Transform:
@@ -18453,6 +18454,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Shoot (4)
       objectReference: {fileID: 0}
+    - target: {fileID: 6315199597434352873, guid: 25c3f74ee46b9224689b082db6898151, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6315199597434352878, guid: 25c3f74ee46b9224689b082db6898151, type: 3}
       propertyPath: m_RootOrder
       value: 19
@@ -20099,6 +20104,10 @@ PrefabInstance:
     - target: {fileID: 6315199597434352873, guid: 25c3f74ee46b9224689b082db6898151, type: 3}
       propertyPath: m_Name
       value: Shoot (6)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6315199597434352873, guid: 25c3f74ee46b9224689b082db6898151, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6315199597434352878, guid: 25c3f74ee46b9224689b082db6898151, type: 3}
       propertyPath: m_RootOrder
@@ -29460,6 +29469,10 @@ PrefabInstance:
     - target: {fileID: 6315199597434352873, guid: 25c3f74ee46b9224689b082db6898151, type: 3}
       propertyPath: m_Name
       value: Shoot (3)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6315199597434352873, guid: 25c3f74ee46b9224689b082db6898151, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6315199597434352878, guid: 25c3f74ee46b9224689b082db6898151, type: 3}
       propertyPath: m_RootOrder
