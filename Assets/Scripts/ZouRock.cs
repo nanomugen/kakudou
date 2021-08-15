@@ -8,8 +8,6 @@ public class ZouRock : MonoBehaviour
     public int number;
     private bool moveTower;
     [SerializeField]
-    private float testFloat = 5;
-    [SerializeField]
     private Vector3 offsetButton;
 
     private Texture button_e;

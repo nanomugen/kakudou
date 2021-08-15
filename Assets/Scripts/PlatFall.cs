@@ -16,9 +16,8 @@ public class PlatFall : MonoBehaviour{
     private void OnTriggerEnter(Collider other) {
         if(other.tag=="Player"){
             if(!fallInUse){
-                Debug.Log("getting down");
-            fallInUse=true;
-            StartCoroutine(getDown());
+                fallInUse=true;
+                StartCoroutine(getDown());
             }
                 
         }
@@ -26,7 +25,6 @@ public class PlatFall : MonoBehaviour{
 
     IEnumerator getDown(){
         yield return new WaitForSeconds(timeFall);
-        Debug.Log("after count 5");
         rigidbody.useGravity=true;
         rigidbody.isKinematic=false;
         
@@ -34,7 +32,6 @@ public class PlatFall : MonoBehaviour{
     
     private void OnCollisionEnter(Collision other) {
         if(other.gameObject.layer == 6 && other.gameObject.transform.parent != this.transform){
-            Debug.Log("relou no chão");
             transform.position = originalPosition;
             rigidbody.useGravity=false;
             rigidbody.isKinematic=true;

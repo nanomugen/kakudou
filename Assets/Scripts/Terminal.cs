@@ -18,6 +18,8 @@ public class Terminal : MonoBehaviour{
         //myStyle.wordWrap = true;
         message[0] = "This is Paris, and here you can see the EIffel Tower, \nat least what remains of it... but looks like you can put it back together, \nfind the hints and move the sliders inside the misterious rocks \nto reconnect it all, then you can take a good picture from the best point of view.";
         message[1] = "to begin with the static platforms challenge...\nthe answer will be the debut of tower...\nyou have two sliders, you should use two digits in each one...\nyou may need to split some number...";
+        message[2] = "for the second challenge you will need to know the height of the tower...\nagain, you need 2 numbers... \n2 you will need to split 3 for 2...";
+        message[3] = "did you know that the humans used this tower to television signal transmission?\n if you can say the year that it started...\nthen you can solve the last puzzle...";
     }
 
     // Update is called once per frame

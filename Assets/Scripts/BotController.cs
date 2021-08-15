@@ -76,24 +76,18 @@ public class BotController : MonoBehaviour{
     //particle effect
     [SerializeField]
     private GameObject dust;
+    private bool win;
+    private bool winEnd;
     void OnGUI(){
         
         if(MenuOpened){
             GUILayout.BeginArea(new Rect(10, 10, 200, 300));
                 GUILayout.Label("CameraHeight: "+CameraHeight);
-                //CameraHeight = GUILayout.HorizontalSlider(CameraHeight,2f,10f);
                 GUILayout.Label("CameraDistance: "+CameraDistance);
-                //CameraDistance = GUILayout.HorizontalSlider(CameraDistance,2f,10f);
                 GUILayout.Label("Mouse Sensibility: "+Sensibility);
                 Sensibility = GUILayout.HorizontalSlider(Sensibility,5f,50f);
                 GUILayout.Label("Mouse Sensibility FPS: "+SensibilityFPS);
                 SensibilityFPS = GUILayout.HorizontalSlider(SensibilityFPS,0.5f,8f);
-                GUILayout.Label("Speed: "+Speed);
-                Speed = GUILayout.HorizontalSlider(Speed,2f,10f);
-                GUILayout.Label("Jump: "+JumpForce);
-                JumpForce = GUILayout.HorizontalSlider(JumpForce,2f,10f);
-                GUILayout.Label("Message Timeout: "+ MessageTimeout);
-                MessageTimeout = GUILayout.HorizontalSlider(MessageTimeout,1f,30f);
             GUILayout.EndArea();
             
             GUILayout.BeginArea(new Rect(10,Screen.height-30,50,20));
@@ -107,6 +101,22 @@ public class BotController : MonoBehaviour{
             GUILayout.BeginArea(new Rect(10,Screen.height-200,160,90));
                 if(lastPic!=null){
                     GUILayout.Box(lastPic);
+                }
+            GUILayout.EndArea();
+        }
+        if(win){
+            GUILayout.BeginArea(new Rect(10, 10, 200, 300));
+                GUILayout.Label("Written and Produced by Elton");
+                GUILayout.Label("Musics\nCirque Français\nHot and tasty\nLa Fleur\nParis Pigalle\nPetite Chanson\nVoila Paris");
+                GUILayout.Label("Thank you for playing!");
+            GUILayout.EndArea();
+        }
+
+        if(winEnd){
+            
+            GUILayout.BeginArea(new Rect(10,Screen.height-30,50,20));
+                if(GUILayout.Button("Reset")){
+                    SceneManager.LoadScene("TitleScene");
                 }
             GUILayout.EndArea();
         }
@@ -153,9 +163,9 @@ public class BotController : MonoBehaviour{
                 p2x = Mathf.RoundToInt(eiffel_p2.transform.position.x);
                 p2z = Mathf.RoundToInt(eiffel_p2.transform.position.z);
                 GUILayout.BeginArea(new Rect((Screen.width/2)-250,10,500,400));
-                    GUILayout.Label("X Axis: "+(p2x+83));
+                    GUILayout.Label("X Axis: "+(p2x+68));
                     p2x = (int)GUILayout.HorizontalSlider(p2x,-250f,250f);
-                    GUILayout.Label("Z Axis: "+(p2z+9));
+                    GUILayout.Label("Z Axis: "+(p2z-56));
                     p2z = (int)GUILayout.HorizontalSlider(p2z,-250f,250f);
                     eiffel_p2.transform.position = new Vector3(p2x,eiffel_p2.transform.position.y,p2z);
 
@@ -171,9 +181,9 @@ public class BotController : MonoBehaviour{
                 p3x = Mathf.RoundToInt(eiffel_p3.transform.position.x);
                 p3z = Mathf.RoundToInt(eiffel_p3.transform.position.z);
                 GUILayout.BeginArea(new Rect((Screen.width/2)-250,10,500,400));
-                    GUILayout.Label("X Axis: "+(p3x+83));
+                    GUILayout.Label("X Axis: "+(p3x+84));
                     p3x = (int)GUILayout.HorizontalSlider(p3x,-250f,250f);
-                    GUILayout.Label("Z Axis: "+(p3z+9));
+                    GUILayout.Label("Z Axis: "+(p3z-23));
                     p3z = (int)GUILayout.HorizontalSlider(p3z,-250f,250f);
                     eiffel_p3.transform.position = new Vector3(p3x,eiffel_p3.transform.position.y,p3z);
 
@@ -221,26 +231,33 @@ public class BotController : MonoBehaviour{
         Directory.CreateDirectory("Pictures");
         lastPic = new Texture2D(Screen.width,Screen.height,TextureFormat.ARGB32,false);
         
-        //IMPLEMENT A SYSTEM THAT SAVE THE NAME OF LAST PICTURE************************
 
         
 
     }
     void Update(){
-        Move();
-        Jump();
-        Menu();
-        CameraMove();
-        Freeze();
-        Snap();
-        RockMove();
+        if(!win){
+            Move();
+            Jump();
+            Menu();
+            CameraMove();
+            Freeze();
+            Snap();
+            RockMove();
+        }
+        else{
+            Win();
+        }
+        
         
     }
     void Snap(){
         if(FirstPerson && Input.GetButtonDown("LeftClick") && !MenuOpened){
             Debug.Log("take snap "+ System.DateTime.Now.ToString("yyyyMMddHHmmssffff"));
             lastPic=ScreenCapture.CaptureScreenshotAsTexture(1);
-            File.WriteAllBytes("Pictures"+Path.DirectorySeparatorChar+"screenshot"+System.DateTime.Now.ToString("yyyyMMddHHmmssffff")+".png",lastPic.EncodeToPNG());
+            string nameofpicture = "Pictures"+Path.DirectorySeparatorChar+"screenshot"+System.DateTime.Now.ToString("yyyyMMddHHmmssffff")+".png";
+            //PlayerPrefs.SetString("PicName",nameofpicture);
+            File.WriteAllBytes(nameofpicture,lastPic.EncodeToPNG());
             MessageStart("You Took a Picture!");
             if(audioScr.isPlaying){
                 audioScr.Stop();
@@ -251,23 +268,40 @@ public class BotController : MonoBehaviour{
             if(Physics.Raycast(photoRay,out RaycastHit hit, Mathf.Infinity)){
                 if(hit.transform.name == "Goal"||hit.transform.name =="eiffel_p1"||hit.transform.name =="eiffel_p2"||hit.transform.name =="eiffel_p3"){
                     if(observer && p1 && p2 && p3){
-                        Debug.Log("you win");
-                        SceneManager.LoadScene("WinScene");
+                        //Debug.Log("you win");
+                        //SceneManager.LoadScene("WinScene");
+                        win=true;
+                        
+                        if(audioScr.isPlaying){
+                            audioScr.Stop();
+                        }
+                        audioScr.clip = misterySound;
+                        audioScr.Play();
+                        //Win();
 
                     }
                     else{
-                        Debug.Log("1 "+observer+p1+p2+p3);
+                        //Debug.Log("1 "+observer+p1+p2+p3);
                     }
                 }
                 else{
-                    Debug.Log("2");
+                    //Debug.Log("2");
                 }
                     
             }
             else{
-                Debug.Log("3");
+                //Debug.Log("3");
             }
             
+        }
+    }
+    void Win(){
+        if(Camera.main.fieldOfView>=0.5f){
+            Camera.main.fieldOfView -= Time.deltaTime;
+        }
+        else{
+            Cursor.lockState = CursorLockMode.None;
+            winEnd=true;
         }
     }
 
